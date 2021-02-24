@@ -7,6 +7,7 @@
     tools:context=".MainActivity">
 
     <RadioGroup
+        android:id="@+id/radioGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -25,5 +26,16 @@
             android:layout_height="wrap_content"
             android:text="Client" />
     </RadioGroup>
+
+    <Button
+        android:id="@+id/btn_discover"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="discover"
+        android:onClick="onDiscoverClick"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
