@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
+    @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onDiscoverClick(view: View) {
         if (locationPermissionGranted) {
             queryPairedDevices()
@@ -85,7 +86,7 @@ class MainActivity : AppCompatActivity() {
             it.forEach { device ->
                 val deviceName = device.name
                 val deviceHardwareAddress = device.address // MAC address
-                log.i("d:$device")
+                log.i("d:$deviceName:$deviceHardwareAddress-$device")
             }
         }
     }
