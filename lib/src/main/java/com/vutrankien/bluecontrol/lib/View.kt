@@ -10,5 +10,6 @@ interface View {
     fun finish()
     suspend fun askEnableBluetooth(): Boolean
     suspend fun askLocationPermission(): Boolean
+    fun populateDevices(devices: Set<Environment.BluetoothDevice>)
 
 }

@@ -44,11 +44,12 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
 
     private fun discover() {
         val pairedDevices = env.queryPairedDevices()
-        pairedDevices.let {
+        pairedDevices.also {
             log.d("Paired devices:${it.count()}")
             it.forEach { device ->
                 log.i("d:$device")
             }
+            view.populateDevices(it)
         }
     }
 

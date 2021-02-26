@@ -6,11 +6,14 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.vutrankien.android.lib.AndroidLogFactory
+import com.vutrankien.bluecontrol.lib.Environment
 import com.vutrankien.bluecontrol.lib.Presenter
 import com.vutrankien.lib.LogFactory
 import kotlinx.coroutines.CompletableDeferred
@@ -72,6 +75,14 @@ class MainActivity : AppCompatActivity() {
             completableDeferred = CompletableDeferred()
             permissionRequestLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             return completableDeferred!!.await()
+        }
+
+        override fun populateDevices(devices: Set<Environment.BluetoothDevice>) {
+            findViewById<Spinner>(R.id.spin_devices).adapter = ArrayAdapter(
+                this@MainActivity,
+                android.R.layout.simple_spinner_item,
+                devices.toList().map { it.name }
+            )
         }
 
     }
