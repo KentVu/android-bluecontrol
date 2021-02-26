@@ -1,10 +1,14 @@
 package com.vutrankien.bluecontrol.lib
 
+import kotlinx.coroutines.CoroutineScope
+
 interface View {
 
-    fun alert(msg: String, onDismiss: () -> Unit)
+    val scope: CoroutineScope
+
+    suspend fun alert(msg: String, onDismiss: () -> Unit)
     fun finish()
     fun askEnableBluetooth()
-    fun askLocationPermission()
+    suspend fun askLocationPermission(): Boolean
 
 }

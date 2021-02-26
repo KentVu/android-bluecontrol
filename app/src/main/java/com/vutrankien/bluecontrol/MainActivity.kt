@@ -13,9 +13,13 @@ import androidx.appcompat.app.AppCompatActivity
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Presenter
 import com.vutrankien.lib.LogFactory
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,16 +28,20 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_ENABLE_BT = 1
     }
 
-    private val presenter by lazy { Presenter(AndroidEnv(application), ViewImpl()) }
+    private val presenter by lazy { Presenter(AndroidEnv(application), viewImpl) }
 
+    private val viewImpl = ViewImpl()
     inner class ViewImpl : com.vutrankien.bluecontrol.lib.View {
+        override val scope = CoroutineScope(Dispatchers.Main + Job())
 
-        override fun alert(msg: String, onDismiss: () -> Unit) {
+        override suspend fun alert(msg: String, onDismiss: () -> Unit) = suspendCoroutine<Unit> { continuation ->
             AlertDialog.Builder(this@MainActivity)
                 .setMessage(msg)
-                .setOnCancelListener { finish() }
+                .setOnCancelListener {
+                    onDismiss()
+                    continuation.resume(Unit)
+                }
                 .show()
-
         }
 
         override fun finish() {
@@ -45,13 +53,21 @@ class MainActivity : AppCompatActivity() {
             enableBluetoothLauncher.launch(enableBtIntent)
         }
 
-        override fun askLocationPermission() {
+        private var completableDeferred: CompletableDeferred<Boolean>? = null
+        private val permissionRequestLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                log.i("User has granted permission: $isGranted")
+                completableDeferred!!.complete(isGranted)
+            }
+
+        override suspend fun askLocationPermission(): Boolean {
+            completableDeferred = CompletableDeferred()
             permissionRequestLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            return completableDeferred!!.await()
         }
 
     }
 
-    val scope = CoroutineScope(Dispatchers.Main + Job())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,11 +84,6 @@ class MainActivity : AppCompatActivity() {
         log.d("onResume")
         presenter.onResume()
     }
-
-    private val permissionRequestLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            log.i("User has granted permission: $isGranted")
-        }
 
     @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onDiscoverClick(view: View) {
