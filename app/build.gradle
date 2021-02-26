@@ -37,6 +37,7 @@ dependencies {
     implementation "androidx.activity:activity-ktx:$activity_version"
     // https://stackoverflow.com/a/64578545/1562087
     implementation 'androidx.fragment:fragment-ktx:1.3.0'
+    implementation "org.koin:koin-android:$koin_version"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
