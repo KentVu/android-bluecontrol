@@ -6,7 +6,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class Presenter(private val env: Environment, private val view: View) : KoinComponent {
-    fun onResume() {
+    fun onCreate() {
         view.apply {
             scope.launch {
                 if (!env.bluetoothSupported()) {
@@ -17,8 +17,14 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                     return@launch
                 }
                 if (!env.bluetoothEnabled()) {
-                    askEnableBluetooth()
+                    if (!askEnableBluetooth()) {
+                        alert("Please enable bluetooth!") { finish() }
+                        return@launch
+                    }
+                    // user enabled bluetooth!
                 }
+                // bluetooth enabled
+                discover()
             }
         }
     }
@@ -33,7 +39,6 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                     //return@launch
                 }
             }
-            discover()
         }
     }
 
@@ -42,9 +47,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         pairedDevices.let {
             log.d("Paired devices:${it.count()}")
             it.forEach { device ->
-                val deviceName = device.name
-                val deviceHardwareAddress = device.address // MAC address
-                log.i("d:$deviceHardwareAddress->$deviceName-$device")
+                log.i("d:$device")
             }
         }
     }

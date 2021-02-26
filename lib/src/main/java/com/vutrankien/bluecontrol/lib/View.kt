@@ -8,7 +8,7 @@ interface View {
 
     suspend fun alert(msg: String, onDismiss: () -> Unit)
     fun finish()
-    fun askEnableBluetooth()
+    suspend fun askEnableBluetooth(): Boolean
     suspend fun askLocationPermission(): Boolean
 
 }

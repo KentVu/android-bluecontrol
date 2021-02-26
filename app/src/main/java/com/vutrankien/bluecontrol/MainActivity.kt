@@ -1,8 +1,8 @@
 package com.vutrankien.bluecontrol
 
 import android.Manifest
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -17,7 +17,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -48,12 +47,21 @@ class MainActivity : AppCompatActivity() {
             this@MainActivity.finish()
         }
 
-        override fun askEnableBluetooth() {
+        private var completableDeferred: CompletableDeferred<Boolean>? = null
+
+        private val enableBluetoothLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { it: ActivityResult? ->
+                log.i("Bluetooth enabled: $it")
+                completableDeferred!!.complete(it?.resultCode == Activity.RESULT_OK)
+            }
+
+        override suspend fun askEnableBluetooth(): Boolean {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            completableDeferred = CompletableDeferred()
             enableBluetoothLauncher.launch(enableBtIntent)
+            return completableDeferred!!.await()
         }
 
-        private var completableDeferred: CompletableDeferred<Boolean>? = null
         private val permissionRequestLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 log.i("User has granted permission: $isGranted")
@@ -72,17 +80,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        presenter.onCreate()
     }
-
-    private val enableBluetoothLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { it: ActivityResult? ->
-            log.i("Bluetooth enabled: $it")
-        }
 
     override fun onResume() {
         super.onResume()
         log.d("onResume")
-        presenter.onResume()
     }
 
     @Suppress("UNUSED_PARAMETER") // requires for android:onClick
