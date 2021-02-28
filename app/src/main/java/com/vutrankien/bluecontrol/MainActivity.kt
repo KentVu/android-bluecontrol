@@ -12,14 +12,12 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Environment
 import com.vutrankien.bluecontrol.lib.Presenter
 import com.vutrankien.lib.LogFactory
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -34,7 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     private val viewImpl = ViewImpl()
     inner class ViewImpl : com.vutrankien.bluecontrol.lib.View {
-        override val scope = CoroutineScope(Dispatchers.Main + Job())
+        val scope = CoroutineScope(Dispatchers.Main + Job())
 
         override suspend fun alert(msg: String, onDismiss: () -> Unit) = suspendCoroutine<Unit> { continuation ->
             AlertDialog.Builder(this@MainActivity)
@@ -91,7 +89,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        presenter.onCreate()
+        lifecycleScope.launch {
+            presenter.onCreate()
+        }
     }
 
     override fun onResume() {
@@ -101,7 +101,17 @@ class MainActivity : AppCompatActivity() {
 
     @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onDiscoverClick(view: View) {
-        presenter.onDiscoverClick()
+        lifecycleScope.launch {
+            presenter.onDiscoverClick()
+        }
+    }
+
+    fun onStartClick(view: View) {
+        presenter.onStartClick()
+    }
+
+    fun onSendClick(view: View) {
+        presenter.onSendClick()
     }
 
 }

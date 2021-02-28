@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Environment
+import java.util.*
 
 class AndroidEnv(private val application: Application) : Environment {
 
@@ -28,6 +29,12 @@ class AndroidEnv(private val application: Application) : Environment {
         return pairedDevices!!.map {
             Environment.BluetoothDevice(it.name, it.address)
         }.toSet()
+    }
+
+    override fun listenBluetoothConnection(name: String, uuid: UUID) {
+        val blueServerSocket =
+            bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
+        blueServerSocket.accept()
     }
 
     override val locationPermissionGranted: Boolean
