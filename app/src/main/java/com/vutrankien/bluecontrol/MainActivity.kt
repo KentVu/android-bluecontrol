@@ -128,7 +128,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSendClick(view: View) {
-        presenter.onSendClick(findViewById<EditText>(R.id.edt_msg).text.toString())
+        lifecycleScope.launch {
+            presenter.onSendClick(findViewById<EditText>(R.id.edt_msg).text.toString())
+        }
     }
 
 }

@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothSocket
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
-import com.vutrankien.bluecontrol.lib.Conf
 import com.vutrankien.bluecontrol.lib.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -42,24 +41,26 @@ class AndroidEnv(private val application: Application) : Environment {
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    override fun listenBluetoothConnection(name: String, uuid: UUID): Flow<Environment.ListenEvent> = flow {
+    override fun listenBluetoothConnection(name: String, uuid: UUID): Flow<Environment.ConnectionEvent> = flow {
         val blueServerSocket =
             bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
-        emit(Environment.ListenEvent.LISTENING)
+        emit(Environment.ConnectionEvent.LISTENING)
         val s2cSocket = blueServerSocket.accept()
-        emit(Environment.ListenEvent.Accepted(AndroidBlueSocket(s2cSocket)))
+        emit(Environment.ConnectionEvent.Accepted(AndroidBlueSocket(s2cSocket)))
         blueServerSocket.close()
     }.flowOn(Dispatchers.IO)
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     override fun sendMsg(
         device: Environment.BluetoothDevice?,
-        msg: String
-    ) {
-        toRealDevices[device]!!.createRfcommSocketToServiceRecord(Conf.uuid).use {
+        msg: String,
+        uuid: UUID
+    ) = flow<Environment.ConnectionEvent> {
+        toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid).use {
             it.connect()
-
+            emit(Environment.ConnectionEvent.Connected(AndroidBlueSocket(it)))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     class AndroidBlueSocket(s2cSocket: BluetoothSocket) :
         Environment.BlueSocket {

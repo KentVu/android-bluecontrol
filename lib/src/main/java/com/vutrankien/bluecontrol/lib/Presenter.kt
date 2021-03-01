@@ -53,19 +53,26 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
     suspend fun onStartClick() {
         env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect {
             when (it) {
-                Environment.ListenEvent.LISTENING -> {
+                Environment.ConnectionEvent.LISTENING -> {
                     view.updateStatus("Server socket listening...")
                 }
-                is Environment.ListenEvent.Accepted -> {
+                is Environment.ConnectionEvent.Accepted -> {
                     view.updateStatus("Server socket accepted!")
                 }
             }
         }
     }
 
-    fun onSendClick(msg: String) {
+    suspend fun onSendClick(msg: String) {
         log.d("onSendClick:$msg")
-        env.sendMsg(selectedDevice, msg)
+        env.sendMsg(selectedDevice, msg, Conf.uuid).collect {
+            when(it) {
+                is Environment.ConnectionEvent.Connected -> {
+                    view.updateStatus("Connected to $it")
+                }
+                else -> log.e("Unsupported event: $it")
+            }
+        }
     }
 
     fun onDeviceSelected(device: Environment.BluetoothDevice) {
