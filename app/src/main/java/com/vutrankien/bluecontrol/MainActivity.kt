@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -83,6 +84,10 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        override fun updateStatus(msg: String) {
+            findViewById<TextView>(R.id.txt_status).text = msg
+        }
+
     }
 
 
@@ -107,7 +112,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onStartClick(view: View) {
-        presenter.onStartClick()
+        lifecycleScope.launch {
+            presenter.onStartClick()
+        }
     }
 
     fun onSendClick(view: View) {

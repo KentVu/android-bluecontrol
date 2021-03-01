@@ -1,10 +1,9 @@
 package com.vutrankien.bluecontrol.lib
 
 import com.vutrankien.lib.LogFactory
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOn
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -52,9 +51,16 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         }
     }
 
-    fun onStartClick() {
-        val async = GlobalScope.async {
-            env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
+    suspend fun onStartClick() {
+        env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect {
+            when (it) {
+                Environment.ListenEvent.LISTENING -> {
+                    view.updateStatus("Server socket listening...")
+                }
+                Environment.ListenEvent.ACCEPTED -> {
+                    view.updateStatus("Server socket accepted!")
+                }
+            }
         }
     }
 

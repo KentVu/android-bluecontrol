@@ -8,6 +8,10 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Environment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import java.util.*
 
 class AndroidEnv(private val application: Application) : Environment {
@@ -31,11 +35,14 @@ class AndroidEnv(private val application: Application) : Environment {
         }.toSet()
     }
 
-    override fun listenBluetoothConnection(name: String, uuid: UUID) {
+    @Suppress("BlockingMethodInNonBlockingContext")
+    override fun listenBluetoothConnection(name: String, uuid: UUID): Flow<Environment.ListenEvent> = flow {
         val blueServerSocket =
             bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
+        emit(Environment.ListenEvent.LISTENING)
         blueServerSocket.accept()
-    }
+        emit(Environment.ListenEvent.ACCEPTED)
+    }.flowOn(Dispatchers.IO)
 
     override val locationPermissionGranted: Boolean
         get() = ContextCompat.checkSelfPermission(
