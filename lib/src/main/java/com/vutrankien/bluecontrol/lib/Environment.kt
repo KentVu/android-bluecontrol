@@ -12,10 +12,18 @@ interface Environment {
     data class BluetoothDevice(val name: String, val address: String)
     fun queryPairedDevices(): Set<BluetoothDevice>
     fun listenBluetoothConnection(name: String, uuid: UUID): Flow<ListenEvent>
+    fun sendMsg(
+        device: BluetoothDevice?,
+        msg: String
+    )
 
-    enum class ListenEvent {
-        LISTENING,
-        ACCEPTED
+    sealed class ListenEvent {
+        object LISTENING : ListenEvent()
+        data class Accepted(val socket: BlueSocket): ListenEvent()
+    }
+
+    interface BlueSocket {
+
     }
 
 }

@@ -1,9 +1,7 @@
 package com.vutrankien.bluecontrol.lib
 
 import com.vutrankien.lib.LogFactory
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -48,6 +46,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                 log.i("d:$device")
             }
             view.populateDevices(it)
+            //selectedDevice = it.first()
         }
     }
 
@@ -57,17 +56,24 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                 Environment.ListenEvent.LISTENING -> {
                     view.updateStatus("Server socket listening...")
                 }
-                Environment.ListenEvent.ACCEPTED -> {
+                is Environment.ListenEvent.Accepted -> {
                     view.updateStatus("Server socket accepted!")
                 }
             }
         }
     }
 
-    fun onSendClick() {
-        TODO("Not yet implemented")
+    fun onSendClick(msg: String) {
+        log.d("onSendClick:$msg")
+        env.sendMsg(selectedDevice, msg)
     }
 
+    fun onDeviceSelected(device: Environment.BluetoothDevice) {
+        log.d("device selected:$device")
+        selectedDevice = device
+    }
+
+    private var selectedDevice: Environment.BluetoothDevice? = null
     private val logFactory: LogFactory by inject()
     private val log = logFactory.newLog("Presenter")
 }

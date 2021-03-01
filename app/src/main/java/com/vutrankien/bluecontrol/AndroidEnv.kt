@@ -4,9 +4,11 @@ import android.Manifest
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
+import com.vutrankien.bluecontrol.lib.Conf
 import com.vutrankien.bluecontrol.lib.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -28,10 +30,14 @@ class AndroidEnv(private val application: Application) : Environment {
         return bluetoothAdapter!!.isEnabled
     }
 
+    private val toRealDevices: MutableMap<Environment.BluetoothDevice, BluetoothDevice> = mutableMapOf()
+
     override fun queryPairedDevices(): Set<Environment.BluetoothDevice> {
         val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter!!.bondedDevices
         return pairedDevices!!.map {
-            Environment.BluetoothDevice(it.name, it.address)
+            val bluetoothDevice = Environment.BluetoothDevice(it.name, it.address)
+            toRealDevices.put(bluetoothDevice, it)
+            bluetoothDevice
         }.toSet()
     }
 
@@ -40,9 +46,25 @@ class AndroidEnv(private val application: Application) : Environment {
         val blueServerSocket =
             bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
         emit(Environment.ListenEvent.LISTENING)
-        blueServerSocket.accept()
-        emit(Environment.ListenEvent.ACCEPTED)
+        val s2cSocket = blueServerSocket.accept()
+        emit(Environment.ListenEvent.Accepted(AndroidBlueSocket(s2cSocket)))
+        blueServerSocket.close()
     }.flowOn(Dispatchers.IO)
+
+    override fun sendMsg(
+        device: Environment.BluetoothDevice?,
+        msg: String
+    ) {
+        toRealDevices[device]!!.createRfcommSocketToServiceRecord(Conf.uuid).use {
+            it.connect()
+
+        }
+    }
+
+    class AndroidBlueSocket(s2cSocket: BluetoothSocket) :
+        Environment.BlueSocket {
+
+    }
 
     override val locationPermissionGranted: Boolean
         get() = ContextCompat.checkSelfPermission(

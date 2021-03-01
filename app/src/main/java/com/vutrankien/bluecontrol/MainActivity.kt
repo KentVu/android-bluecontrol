@@ -6,9 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import android.widget.TextView
+import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -77,12 +75,24 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun populateDevices(devices: Set<Environment.BluetoothDevice>) {
-            findViewById<Spinner>(R.id.spin_devices).adapter = ArrayAdapter(
-                this@MainActivity,
-                android.R.layout.simple_spinner_item,
-                devices.toList().map { it.name }
-            )
-        }
+            val devList = devices.toList()
+            findViewById<Spinner>(R.id.spin_devices).apply {
+                adapter = ArrayAdapter(
+                    this@MainActivity,
+                    android.R.layout.simple_spinner_item,
+                    devList.map { it.name }
+                )
+                onItemSelectedListener = object :AdapterView.OnItemSelectedListener {
+                    override fun onNothingSelected(p0: AdapterView<*>?) {
+                        log.w("onNothingSelected")
+                    }
+
+                    override fun onItemSelected(adt: AdapterView<*>?, p1: View?, pos: Int, id: Long) {
+                        presenter.onDeviceSelected(devList[pos])
+                    }
+                }
+            }
+            }
 
         override fun updateStatus(msg: String) {
             findViewById<TextView>(R.id.txt_status).text = msg
@@ -118,7 +128,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSendClick(view: View) {
-        presenter.onSendClick()
+        presenter.onSendClick(findViewById<EditText>(R.id.edt_msg).text.toString())
     }
 
 }
