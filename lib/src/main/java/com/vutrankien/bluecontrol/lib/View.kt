@@ -10,5 +10,6 @@ interface View {
     suspend fun askLocationPermission(): Boolean
     fun populateDevices(devices: Set<Environment.BluetoothDevice>)
     fun updateStatus(msg: String)
+    fun displayMsg(rcvMsg: String)
 
 }

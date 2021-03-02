@@ -1,7 +1,9 @@
 package com.vutrankien.bluecontrol.lib
 
 import com.vutrankien.lib.LogFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -51,13 +53,21 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
     }
 
     suspend fun onStartClick() {
-        env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect {
-            when (it) {
+        env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect { event ->
+            when (event) {
                 Environment.ConnectionEvent.LISTENING -> {
                     view.updateStatus("Server socket listening...")
                 }
                 is Environment.ConnectionEvent.Accepted -> {
                     view.updateStatus("Server socket accepted!")
+                    val rcvMsg = withContext(Dispatchers.IO) {
+                        event.socket.inputStream.bufferedReader().use {
+                            @Suppress("BlockingMethodInNonBlockingContext")
+                            it.readLine()
+                        }
+                    }
+                    log.d("received msg:$rcvMsg")
+                    view.displayMsg(rcvMsg)
                 }
             }
         }
@@ -65,12 +75,19 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
 
     suspend fun onSendClick(msg: String) {
         log.d("onSendClick:$msg")
-        env.sendMsg(selectedDevice, msg, Conf.uuid).collect {
-            when(it) {
+        env.sendMsg(selectedDevice, msg, Conf.uuid).collect { event ->
+            when(event) {
                 is Environment.ConnectionEvent.Connected -> {
-                    view.updateStatus("Connected to $it")
+                    view.updateStatus("Connected to $event")
+                    withContext(Dispatchers.IO) {
+                        @Suppress("BlockingMethodInNonBlockingContext")
+                        event.socket.outputStream.bufferedWriter().use {
+                            it.write(msg)
+                            it.newLine()
+                        }
+                    }
                 }
-                else -> log.e("Unsupported event: $it")
+                else -> log.e("Unsupported event: $event")
             }
         }
     }

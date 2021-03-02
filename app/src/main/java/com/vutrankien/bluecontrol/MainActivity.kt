@@ -5,6 +5,7 @@ import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
 import android.view.View
 import android.widget.*
 import androidx.activity.result.ActivityResult
@@ -98,6 +99,10 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.txt_status).text = msg
         }
 
+        override fun displayMsg(rcvMsg: String) {
+            findViewById<EditText>(R.id.edt_received).text = rcvMsg.toEditable()
+        }
+
     }
 
 
@@ -134,3 +139,5 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
+
+fun String.toEditable(): Editable =  Editable.Factory.getInstance().newEditable(this)

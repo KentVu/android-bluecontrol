@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.*
 
 class AndroidEnv(private val application: Application) : Environment {
@@ -47,7 +49,7 @@ class AndroidEnv(private val application: Application) : Environment {
         emit(Environment.ConnectionEvent.LISTENING)
         val s2cSocket = blueServerSocket.accept()
         emit(Environment.ConnectionEvent.Accepted(AndroidBlueSocket(s2cSocket)))
-        blueServerSocket.close()
+        //TODO blueServerSocket.close()
     }.flowOn(Dispatchers.IO)
 
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -56,14 +58,18 @@ class AndroidEnv(private val application: Application) : Environment {
         msg: String,
         uuid: UUID
     ) = flow<Environment.ConnectionEvent> {
-        toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid).use {
+        toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid)./*TODO use*/let {
             it.connect()
             emit(Environment.ConnectionEvent.Connected(AndroidBlueSocket(it)))
         }
     }.flowOn(Dispatchers.IO)
 
-    class AndroidBlueSocket(s2cSocket: BluetoothSocket) :
+    class AndroidBlueSocket(private val socket: BluetoothSocket) :
         Environment.BlueSocket {
+        override val inputStream: InputStream
+            get() = socket.inputStream
+        override val outputStream: OutputStream
+            get() = socket.outputStream
 
     }
 
