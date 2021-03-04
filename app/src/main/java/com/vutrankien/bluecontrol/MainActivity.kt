@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         override fun updateStatus(msg: String) {
-            findViewById<TextView>(R.id.txt_status).text = msg
+            findViewById<TextView>(R.id.edt_status).append("$msg\n")
         }
 
         override fun displayMsg(rcvMsg: String) {

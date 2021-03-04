@@ -48,12 +48,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_discover" />
 
-    <TextView
-        android:id="@+id/txt_status"
+    <EditText
+        android:id="@+id/edt_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="8dp"
+        android:inputType="none"
+        android:lines="3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/spin_devices" />
@@ -68,7 +70,7 @@
         android:onClick="onStartClick"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/txt_status" />
+        app:layout_constraintTop_toBottomOf="@id/edt_status" />
 
     <EditText
         android:id="@+id/edt_received"
@@ -81,7 +83,7 @@
         android:enabled="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/btn_start"
-        app:layout_constraintTop_toBottomOf="@id/txt_status" />
+        app:layout_constraintTop_toBottomOf="@id/edt_status" />
 
     <EditText
         android:id="@+id/edt_msg"
