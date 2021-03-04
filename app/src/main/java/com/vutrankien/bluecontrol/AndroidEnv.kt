@@ -71,6 +71,9 @@ class AndroidEnv(private val application: Application) : Environment {
         override val outputStream: OutputStream
             get() = socket.outputStream
 
+        override fun toString(): String {
+            return "${super.toString()}${socket.remoteDevice}"
+        }
     }
 
     override val locationPermissionGranted: Boolean

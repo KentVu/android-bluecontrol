@@ -95,12 +95,12 @@ class MainActivity : AppCompatActivity() {
             }
             }
 
-        override fun updateStatus(msg: String) {
-            findViewById<TextView>(R.id.txt_status).text = msg
+        override fun updateStatus(sts: String) {
+            findViewById<EditText>(R.id.edt_log).append("log:$sts\n")
         }
 
         override fun displayMsg(rcvMsg: String) {
-            findViewById<EditText>(R.id.edt_received).text = rcvMsg.toEditable()
+            findViewById<EditText>(R.id.edt_log).append("$rcvMsg\n")
         }
 
     }
@@ -109,6 +109,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        //findViewById<EditText>(R.id.edt_log).movementMethod = ScrollingMovementMethod()
         lifecycleScope.launch {
             presenter.onCreate()
         }

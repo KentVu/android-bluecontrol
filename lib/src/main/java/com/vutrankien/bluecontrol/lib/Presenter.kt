@@ -25,7 +25,8 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                 // user enabled bluetooth!
             }
             // bluetooth enabled
-            discover()
+            populatePairedDevices()
+            onStartClick()
         }
     }
 
@@ -40,7 +41,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         }
     }
 
-    private fun discover() {
+    private fun populatePairedDevices() {
         val pairedDevices = env.queryPairedDevices()
         pairedDevices.also {
             log.d("Paired devices:${it.count()}")
@@ -52,6 +53,9 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         }
     }
 
+    /**
+     * Start listening.
+     */
     suspend fun onStartClick() {
         env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect { event ->
             when (event) {
@@ -67,7 +71,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                         }
                     }
                     log.d("received msg:$rcvMsg")
-                    view.displayMsg(rcvMsg)
+                    view.displayMsg("Client:$rcvMsg")
                 }
             }
         }
@@ -75,10 +79,11 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
 
     suspend fun onSendClick(msg: String) {
         log.d("onSendClick:$msg")
+        view.displayMsg("Client:$msg")
         env.sendMsg(selectedDevice, msg, Conf.uuid).collect { event ->
             when(event) {
                 is Environment.ConnectionEvent.Connected -> {
-                    view.updateStatus("Connected to $event")
+                    view.updateStatus("Connected to ${event.socket}")
                     withContext(Dispatchers.IO) {
                         @Suppress("BlockingMethodInNonBlockingContext")
                         event.socket.outputStream.bufferedWriter().use {
