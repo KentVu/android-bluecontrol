@@ -3,6 +3,8 @@ package com.vutrankien.bluecontrol.lib
 import com.vutrankien.lib.LogFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -57,42 +59,49 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
      * Start listening.
      */
     suspend fun onStartClick() {
-        env.listenBluetoothConnection(Conf.serviceName, Conf.uuid).collect { event ->
-            when (event) {
-                Environment.ConnectionEvent.LISTENING -> {
-                    view.updateStatus("Server socket listening...")
-                }
-                is Environment.ConnectionEvent.Accepted -> {
-                    view.updateStatus("Server socket accepted!")
-                    val rcvMsg = withContext(Dispatchers.IO) {
-                        event.socket.inputStream.bufferedReader().use {
-                            @Suppress("BlockingMethodInNonBlockingContext")
-                            it.readLine()
-                        }
-                    }
-                    log.d("received msg:$rcvMsg")
-                    view.displayMsg("Client:$rcvMsg")
+        flow {
+            serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
+            emit(ConnectionEvent.LISTENING)
+            val s2cSocket = serverSocket!!.accept()
+            emit(ConnectionEvent.ACCEPTED)
+            s2cSocket.inputStream.bufferedReader().use {
+                while (true) {
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    val line = it.readLine()
+                    log.d("received msg:$line")
+                    emit(ConnectionEvent.ReceivedMsg(line))
                 }
             }
+        }.flowOn(Dispatchers.IO).collect {
+            when(it) {
+                ConnectionEvent.LISTENING -> view.updateStatus("Server socket listening...")
+                ConnectionEvent.ACCEPTED -> view.updateStatus("Server socket accepted!")
+                is ConnectionEvent.ReceivedMsg -> view.updateStatus("Client:${it.msg}")
+            }
+        }
+    }
+
+    sealed class ConnectionEvent {
+        object LISTENING : ConnectionEvent()
+        object ACCEPTED : ConnectionEvent()
+        data class Connected(val socket: Environment.BlueSocket) : ConnectionEvent()
+        data class ReceivedMsg(val msg: String) : ConnectionEvent() {
+
         }
     }
 
     suspend fun onSendClick(msg: String) {
         log.d("onSendClick:$msg")
         view.displayMsg("Client:$msg")
-        env.sendMsg(selectedDevice, msg, Conf.uuid).collect { event ->
-            when(event) {
-                is Environment.ConnectionEvent.Connected -> {
-                    view.updateStatus("Connected to ${event.socket}")
-                    withContext(Dispatchers.IO) {
-                        @Suppress("BlockingMethodInNonBlockingContext")
-                        event.socket.outputStream.bufferedWriter().use {
-                            it.write(msg)
-                            it.newLine()
-                        }
-                    }
-                }
-                else -> log.e("Unsupported event: $event")
+        if (socket == null) {
+            socket = env.connectToDevice(selectedDevice, Conf.uuid)
+        }
+        val socket = requireNotNull(socket) {"onSendClick"}
+        view.updateStatus("Connected to ${selectedDevice}-$socket")
+        withContext(Dispatchers.IO) {
+            socket.outputStream.bufferedWriter().use {
+                it.write(msg)
+                it.newLine()
             }
         }
     }
@@ -102,6 +111,8 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         selectedDevice = device
     }
 
+    private var serverSocket: Environment.BlueServerSocket? = null
+    private var socket: Environment.BlueSocket? = null
     private var selectedDevice: Environment.BluetoothDevice? = null
     private val logFactory: LogFactory by inject()
     private val log = logFactory.newLog("Presenter")

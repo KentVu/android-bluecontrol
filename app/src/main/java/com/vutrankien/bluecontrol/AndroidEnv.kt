@@ -4,15 +4,12 @@ import android.Manifest
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Environment
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -43,26 +40,26 @@ class AndroidEnv(private val application: Application) : Environment {
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    override fun listenBluetoothConnection(name: String, uuid: UUID): Flow<Environment.ConnectionEvent> = flow {
+    override fun listenBluetoothConnection(name: String, uuid: UUID): Environment.BlueServerSocket {
         val blueServerSocket =
             bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
-        emit(Environment.ConnectionEvent.LISTENING)
-        val s2cSocket = blueServerSocket.accept()
-        emit(Environment.ConnectionEvent.Accepted(AndroidBlueSocket(s2cSocket)))
-        //TODO blueServerSocket.close()
-    }.flowOn(Dispatchers.IO)
+        return AndroidBlueServerSocket(blueServerSocket)
+    }
+
+    class AndroidBlueServerSocket(private val realSocket: BluetoothServerSocket) : Environment.BlueServerSocket {
+        override fun accept(): Environment.BlueSocket {
+            return AndroidBlueSocket(realSocket.accept())
+        }
+
+    }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    override fun sendMsg(
+    override fun connectToDevice(
         device: Environment.BluetoothDevice?,
-        msg: String,
         uuid: UUID
-    ) = flow<Environment.ConnectionEvent> {
-        toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid)./*TODO use*/let {
-            it.connect()
-            emit(Environment.ConnectionEvent.Connected(AndroidBlueSocket(it)))
-        }
-    }.flowOn(Dispatchers.IO)
+    ): Environment.BlueSocket {
+        return AndroidBlueSocket(toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid))
+    }
 
     class AndroidBlueSocket(private val socket: BluetoothSocket) :
         Environment.BlueSocket {

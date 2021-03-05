@@ -1,6 +1,5 @@
 package com.vutrankien.bluecontrol.lib
 
-import kotlinx.coroutines.flow.Flow
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -13,19 +12,17 @@ interface Environment {
     fun bluetoothEnabled(): Boolean
     data class BluetoothDevice(val name: String, val address: String)
     fun queryPairedDevices(): Set<BluetoothDevice>
-    fun listenBluetoothConnection(name: String, uuid: UUID): Flow<ConnectionEvent>
-    fun sendMsg(
-        device: BluetoothDevice?,
-        msg: String,
-        uuid: UUID
-    ): Flow<ConnectionEvent>
+    fun listenBluetoothConnection(name: String, uuid: UUID): BlueServerSocket
 
-    sealed class ConnectionEvent {
-        object LISTENING : ConnectionEvent()
+    interface BlueServerSocket {
+        abstract fun accept(): BlueSocket
 
-        data class Accepted(val socket: BlueSocket): ConnectionEvent()
-        data class Connected(val socket: BlueSocket) : ConnectionEvent()
     }
+
+    fun connectToDevice(
+        device: BluetoothDevice?,
+        uuid: UUID
+    ): BlueSocket
 
     interface BlueSocket {
         val inputStream: InputStream
