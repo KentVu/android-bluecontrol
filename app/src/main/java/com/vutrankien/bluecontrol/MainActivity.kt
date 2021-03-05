@@ -120,16 +120,15 @@ class MainActivity : AppCompatActivity() {
         log.d("onResume")
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.onDestroy()
+    }
+
     @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onDiscoverClick(view: View) {
         lifecycleScope.launch {
             presenter.onDiscoverClick()
-        }
-    }
-
-    fun onStartClick(view: View) {
-        lifecycleScope.launch {
-            presenter.onStartClick()
         }
     }
 

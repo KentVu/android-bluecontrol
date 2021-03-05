@@ -1,5 +1,6 @@
 package com.vutrankien.bluecontrol.lib
 
+import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -14,8 +15,8 @@ interface Environment {
     fun queryPairedDevices(): Set<BluetoothDevice>
     fun listenBluetoothConnection(name: String, uuid: UUID): BlueServerSocket
 
-    interface BlueServerSocket {
-        abstract fun accept(): BlueSocket
+    interface BlueServerSocket: Closeable {
+        fun accept(): BlueSocket
 
     }
 
@@ -24,7 +25,8 @@ interface Environment {
         uuid: UUID
     ): BlueSocket
 
-    interface BlueSocket {
+    interface BlueSocket: Closeable {
+
         val inputStream: InputStream
         val outputStream: OutputStream
     }

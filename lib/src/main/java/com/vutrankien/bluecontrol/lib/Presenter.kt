@@ -111,6 +111,11 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         selectedDevice = device
     }
 
+    fun onDestroy() {
+        serverSocket?.close()
+        socket?.close()
+    }
+
     private var serverSocket: Environment.BlueServerSocket? = null
     private var socket: Environment.BlueSocket? = null
     private var selectedDevice: Environment.BluetoothDevice? = null

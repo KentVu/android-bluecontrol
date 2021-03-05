@@ -51,6 +51,10 @@ class AndroidEnv(private val application: Application) : Environment {
             return AndroidBlueSocket(realSocket.accept())
         }
 
+        override fun close() {
+            realSocket.close()
+        }
+
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -70,6 +74,10 @@ class AndroidEnv(private val application: Application) : Environment {
 
         override fun toString(): String {
             return "${super.toString()}${socket.remoteDevice}"
+        }
+
+        override fun close() {
+            socket.close()
         }
     }
 
