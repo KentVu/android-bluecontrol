@@ -15,9 +15,10 @@ interface Environment {
     fun queryPairedDevices(): Set<BluetoothDevice>
     fun listenBluetoothConnection(name: String, uuid: UUID): BlueServerSocket
 
-    interface BlueServerSocket: Closeable {
+    interface BlueServerSocket {
         fun accept(): BlueSocket
 
+        fun close()
     }
 
     fun connectToDevice(
@@ -25,10 +26,11 @@ interface Environment {
         uuid: UUID
     ): BlueSocket
 
-    interface BlueSocket: Closeable {
+    interface BlueSocket {
 
         val inputStream: InputStream
         val outputStream: OutputStream
+        fun close()
     }
 
 }

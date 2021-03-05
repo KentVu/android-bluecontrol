@@ -1,11 +1,13 @@
 package com.vutrankien.bluecontrol.lib
 
 import com.vutrankien.lib.LogFactory
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -28,7 +30,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
             }
             // bluetooth enabled
             populatePairedDevices()
-            onStartClick()
+            startListening()
         }
     }
 
@@ -58,7 +60,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
     /**
      * Start listening.
      */
-    suspend fun onStartClick() {
+    private suspend fun startListening() {
         flow {
             serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
             emit(ServerConnectionEvent.LISTENING)
@@ -89,30 +91,43 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
 
     sealed class ClientConnectionEvent {
         data class Connected(val socket: Environment.BlueSocket) : ClientConnectionEvent()
-        object SENT_MSG : ClientConnectionEvent()
+        data class SentMsg(val msg: String) : ClientConnectionEvent()
     }
 
-    suspend fun onSendClick(msg: String) {
+    suspend fun onSendClick(msg: String) = coroutineScope {
         log.d("onSendClick:$msg")
-        flow {
-            if (socket == null) {
+        if (socket == null) {
+            withContext(Dispatchers.IO) {
                 socket = env.connectToDevice(selectedDevice, Conf.uuid)
-                emit(ClientConnectionEvent.Connected(socket!!))
             }
-            val socket = requireNotNull(socket) {"onSendClick"}
-            socket.outputStream.bufferedWriter().use {
-                it.write(msg)
-                it.newLine()
-                emit(ClientConnectionEvent.SENT_MSG)
-            }
-        }.flowOn(Dispatchers.IO).collect {
-            when(it) {
-                is ClientConnectionEvent.Connected ->
-                    view.updateStatus("Connected to ${selectedDevice}-$socket")
-                is ClientConnectionEvent.SENT_MSG ->
+            view.updateStatus("Connected to ${selectedDevice}-$socket")
+            launch {
+                val receiveChannel = withContext(Dispatchers.Default) {
+                    startSendChannel()
+                }
+                for (msg in receiveChannel) {
                     view.displayMsg("Client:$msg")
+                }
             }
         }
+        msgChan.send(msg)
+    }
+
+    private suspend fun startSendChannel(): ReceiveChannel<String> {
+        val socket = requireNotNull(socket) {"onSendClick"}
+        val chan = Channel<String>()
+        socket.outputStream.bufferedWriter().use {
+            for (msg in msgChan) {
+                withContext(Dispatchers.IO) {
+                    log.d("startSendChannel:$msg")
+                    it.write("$msg\n")
+                    //it.write(msg)
+                    //it.newLine()
+                }
+                chan.send(msg)
+            }
+        }
+        return chan
     }
 
     fun onDeviceSelected(device: Environment.BluetoothDevice) {
@@ -125,6 +140,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         socket?.close()
     }
 
+    private val msgChan: Channel<String> = Channel()
     private var serverSocket: Environment.BlueServerSocket? = null
     private var socket: Environment.BlueSocket? = null
     private var selectedDevice: Environment.BluetoothDevice? = null
