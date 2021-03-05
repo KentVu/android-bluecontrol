@@ -61,47 +61,56 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
     suspend fun onStartClick() {
         flow {
             serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
-            emit(ConnectionEvent.LISTENING)
+            emit(ServerConnectionEvent.LISTENING)
             val s2cSocket = serverSocket!!.accept()
-            emit(ConnectionEvent.ACCEPTED)
+            emit(ServerConnectionEvent.ACCEPTED)
             s2cSocket.inputStream.bufferedReader().use {
                 while (true) {
                     @Suppress("BlockingMethodInNonBlockingContext")
                     val line = it.readLine()
                     log.d("received msg:$line")
-                    emit(ConnectionEvent.ReceivedMsg(line))
+                    emit(ServerConnectionEvent.ReceivedMsg(line))
                 }
             }
         }.flowOn(Dispatchers.IO).collect {
             when(it) {
-                ConnectionEvent.LISTENING -> view.updateStatus("Server socket listening...")
-                ConnectionEvent.ACCEPTED -> view.updateStatus("Server socket accepted!")
-                is ConnectionEvent.ReceivedMsg -> view.updateStatus("Client:${it.msg}")
+                ServerConnectionEvent.LISTENING -> view.updateStatus("Server socket listening...")
+                ServerConnectionEvent.ACCEPTED -> view.updateStatus("Server socket accepted!")
+                is ServerConnectionEvent.ReceivedMsg -> view.updateStatus("Client:${it.msg}")
             }
         }
     }
 
-    sealed class ConnectionEvent {
-        object LISTENING : ConnectionEvent()
-        object ACCEPTED : ConnectionEvent()
-        data class Connected(val socket: Environment.BlueSocket) : ConnectionEvent()
-        data class ReceivedMsg(val msg: String) : ConnectionEvent() {
+    sealed class ServerConnectionEvent {
+        object LISTENING : ServerConnectionEvent()
+        object ACCEPTED : ServerConnectionEvent()
+        data class ReceivedMsg(val msg: String) : ServerConnectionEvent()
+    }
 
-        }
+    sealed class ClientConnectionEvent {
+        data class Connected(val socket: Environment.BlueSocket) : ClientConnectionEvent()
+        object SENT_MSG : ClientConnectionEvent()
     }
 
     suspend fun onSendClick(msg: String) {
         log.d("onSendClick:$msg")
-        view.displayMsg("Client:$msg")
-        if (socket == null) {
-            socket = env.connectToDevice(selectedDevice, Conf.uuid)
-        }
-        val socket = requireNotNull(socket) {"onSendClick"}
-        view.updateStatus("Connected to ${selectedDevice}-$socket")
-        withContext(Dispatchers.IO) {
+        flow {
+            if (socket == null) {
+                socket = env.connectToDevice(selectedDevice, Conf.uuid)
+                emit(ClientConnectionEvent.Connected(socket!!))
+            }
+            val socket = requireNotNull(socket) {"onSendClick"}
             socket.outputStream.bufferedWriter().use {
                 it.write(msg)
                 it.newLine()
+                emit(ClientConnectionEvent.SENT_MSG)
+            }
+        }.flowOn(Dispatchers.IO).collect {
+            when(it) {
+                is ClientConnectionEvent.Connected ->
+                    view.updateStatus("Connected to ${selectedDevice}-$socket")
+                is ClientConnectionEvent.SENT_MSG ->
+                    view.displayMsg("Client:$msg")
             }
         }
     }

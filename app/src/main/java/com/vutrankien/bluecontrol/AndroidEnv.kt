@@ -62,7 +62,9 @@ class AndroidEnv(private val application: Application) : Environment {
         device: Environment.BluetoothDevice?,
         uuid: UUID
     ): Environment.BlueSocket {
-        return AndroidBlueSocket(toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid))
+        val socket = toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid)
+        socket.connect()
+        return AndroidBlueSocket(socket)
     }
 
     class AndroidBlueSocket(private val socket: BluetoothSocket) :

@@ -96,10 +96,12 @@ class MainActivity : AppCompatActivity() {
             }
 
         override fun updateStatus(sts: String) {
+            log.d("updateStatus:$sts")
             findViewById<EditText>(R.id.edt_log).append("log:$sts\n")
         }
 
         override fun displayMsg(rcvMsg: String) {
+            log.d("displayMsg:$rcvMsg")
             findViewById<EditText>(R.id.edt_log).append("$rcvMsg\n")
         }
 
