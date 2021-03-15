@@ -76,6 +76,7 @@ class Presenter(
             client.sendMsgFrom(msgChan)
             return@coroutineScope
         }
+        view.displayMsg("Client:$msg")
         msgChan.send(msg)
     }
 
@@ -174,9 +175,10 @@ class Presenter(
                 socket.outputStream.bufferedWriter().use {
                     for (msg in chan) {
                         log.d("sendMsgFrom:$msg")
-                        //it.write("$msg\n")
-                        it.write(msg)
-                        it.newLine()
+                        it.write("$msg\n")
+                        //it.write(msg)
+                        //it.newLine()
+                        it.flush()
                         //chan.send(msg)
                     }
                 }
