@@ -105,6 +105,10 @@ class MainActivity : AppCompatActivity() {
             findViewById<EditText>(R.id.edt_log).append("$rcvMsg\n")
         }
 
+        override fun disableStartBtn() {
+            findViewById<Button>(R.id.btn_start).isEnabled = false
+        }
+
     }
 
 
@@ -131,6 +135,12 @@ class MainActivity : AppCompatActivity() {
     fun onDiscoverClick(view: View) {
         lifecycleScope.launch {
             presenter.onDiscoverClick()
+        }
+    }
+
+    fun onStartClick(view: View) {
+        lifecycleScope.launch {
+            presenter.onStartClick()
         }
     }
 

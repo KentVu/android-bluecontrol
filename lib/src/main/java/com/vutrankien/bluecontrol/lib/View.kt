@@ -11,5 +11,6 @@ interface View {
     fun populateDevices(devices: Set<Environment.BluetoothDevice>)
     fun updateStatus(sts: String)
     fun displayMsg(rcvMsg: String)
+    fun disableStartBtn()
 
 }

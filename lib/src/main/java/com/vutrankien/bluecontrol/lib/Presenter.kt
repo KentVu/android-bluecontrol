@@ -29,16 +29,6 @@ class Presenter(
             }
             // bluetooth enabled
             populatePairedDevices()
-            view.updateStatus("Server socket listening...")
-            withContext(Dispatchers.IO) {
-                server.startListening()
-            }
-            view.updateStatus("Server socket accepted!")
-            withContext(Dispatchers.Default) {
-                for (msg in server.receiveFromClient(this)) {
-                    view.updateStatus("Client:${msg}")
-                }
-            }
         }
     }
 
@@ -92,6 +82,20 @@ class Presenter(
     fun onDeviceSelected(device: Environment.BluetoothDevice) {
         log.d("device selected:$device")
         selectedDevice = device
+    }
+
+    suspend fun onStartClick() = coroutineScope {
+        view.updateStatus("Server socket listening...")
+        view.disableStartBtn()
+        withContext(Dispatchers.IO) {
+            server.startListening()
+        }
+        view.updateStatus("Server socket accepted!")
+        launch {
+            for (msg in server.receiveFromClient(CoroutineScope(Dispatchers.Default))) {
+                view.updateStatus("Client:${msg}")
+            }
+        }
     }
 
     fun onDestroy() {
