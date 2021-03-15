@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_ENABLE_BT = 1
     }
 
-    private val presenter by lazy { Presenter(AndroidEnv(application), viewImpl) }
+    private val presenter by lazy { Presenter(AndroidLogFactory.instance, AndroidEnv(application), viewImpl) }
 
     private val viewImpl = ViewImpl()
     inner class ViewImpl : com.vutrankien.bluecontrol.lib.View {

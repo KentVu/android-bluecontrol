@@ -81,6 +81,9 @@ class AndroidEnv(private val application: Application) : Environment {
         override fun close() {
             socket.close()
         }
+
+        override val isConnected: Boolean
+            get() = socket.isConnected
     }
 
     override val locationPermissionGranted: Boolean

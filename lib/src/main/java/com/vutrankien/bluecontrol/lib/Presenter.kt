@@ -4,14 +4,12 @@ import com.vutrankien.lib.LogFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consume
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-class Presenter(private val env: Environment, private val view: View) : KoinComponent {
+class Presenter(
+    logFactory: LogFactory,
+    private val env: Environment,
+    private val view: View
+) {
     suspend fun onCreate() {
         view.apply {
             if (!env.bluetoothSupported()) {
@@ -30,7 +28,16 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
             }
             // bluetooth enabled
             populatePairedDevices()
-            startListening()
+            view.updateStatus("Server socket listening...")
+            withContext(Dispatchers.IO) {
+                server.startListening()
+            }
+            view.updateStatus("Server socket accepted!")
+            withContext(Dispatchers.Default) {
+                for (msg in server.receiveFromClient(this)) {
+                    view.updateStatus("Client:${msg}")
+                }
+            }
         }
     }
 
@@ -57,32 +64,6 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         }
     }
 
-    /**
-     * Start listening.
-     */
-    private suspend fun startListening() {
-        flow {
-            serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
-            emit(ServerConnectionEvent.LISTENING)
-            val s2cSocket = serverSocket!!.accept()
-            emit(ServerConnectionEvent.ACCEPTED)
-            s2cSocket.inputStream.bufferedReader().use {
-                while (true) {
-                    @Suppress("BlockingMethodInNonBlockingContext")
-                    val line = it.readLine()
-                    log.d("received msg:$line")
-                    emit(ServerConnectionEvent.ReceivedMsg(line))
-                }
-            }
-        }.flowOn(Dispatchers.IO).collect {
-            when(it) {
-                ServerConnectionEvent.LISTENING -> view.updateStatus("Server socket listening...")
-                ServerConnectionEvent.ACCEPTED -> view.updateStatus("Server socket accepted!")
-                is ServerConnectionEvent.ReceivedMsg -> view.updateStatus("Client:${it.msg}")
-            }
-        }
-    }
-
     sealed class ServerConnectionEvent {
         object LISTENING : ServerConnectionEvent()
         object ACCEPTED : ServerConnectionEvent()
@@ -105,8 +86,8 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
                 val receiveChannel = withContext(Dispatchers.Default) {
                     startSendChannel()
                 }
-                for (msg in receiveChannel) {
-                    view.displayMsg("Client:$msg")
+                for (srvMsg in receiveChannel) {
+                    view.displayMsg("Client:$srvMsg")
                 }
             }
         }
@@ -118,7 +99,7 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
         val chan = Channel<String>()
         socket.outputStream.bufferedWriter().use {
             for (msg in msgChan) {
-                withContext(Dispatchers.IO) {
+                withContext(Dispatchers.Default) {
                     log.d("startSendChannel:$msg")
                     it.write("$msg\n")
                     //it.write(msg)
@@ -136,14 +117,52 @@ class Presenter(private val env: Environment, private val view: View) : KoinComp
     }
 
     fun onDestroy() {
-        serverSocket?.close()
+        server.end()
         socket?.close()
     }
 
+    private val server: Server = Server(logFactory, env)
+
+    class Server(
+        logFactory: LogFactory,
+        private val env: Environment
+    ) {
+        private var serverSocket: Environment.BlueServerSocket? = null
+        private var socket: Environment.BlueSocket? = null
+        private val log = logFactory.newLog("Server")
+
+        /**
+         * Start listening.
+         */
+        internal fun startListening() {
+            serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
+            log.d("listening...")
+            socket = serverSocket!!.accept()
+        }
+
+        fun receiveFromClient(scope: CoroutineScope): Channel<String> {
+            val channel = Channel<String>()
+            scope.launch {
+                val s2cSocket = this@Server.socket!!
+                s2cSocket.inputStream.bufferedReader().use {
+                    while (s2cSocket.isConnected) {
+                        @Suppress("BlockingMethodInNonBlockingContext")
+                        val line = it.readLine()
+                        this@Server.log.d("received msg:$line")
+                        channel.send(line)
+                    }
+                }
+            }
+            return channel
+        }
+
+        fun end() {
+            serverSocket?.close()
+        }
+    }
+
     private val msgChan: Channel<String> = Channel()
-    private var serverSocket: Environment.BlueServerSocket? = null
     private var socket: Environment.BlueSocket? = null
     private var selectedDevice: Environment.BluetoothDevice? = null
-    private val logFactory: LogFactory by inject()
     private val log = logFactory.newLog("Presenter")
 }

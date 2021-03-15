@@ -31,6 +31,7 @@ interface Environment {
         val inputStream: InputStream
         val outputStream: OutputStream
         fun close()
+        val isConnected: Boolean
     }
 
 }
