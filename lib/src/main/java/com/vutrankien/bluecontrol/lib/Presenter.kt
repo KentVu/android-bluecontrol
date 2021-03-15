@@ -4,6 +4,7 @@ import com.vutrankien.lib.LogFactory
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import java.util.concurrent.Executors
 
 class Presenter(
     logFactory: LogFactory,
@@ -76,39 +77,16 @@ class Presenter(
     }
 
     suspend fun onSendClick(msg: String) = coroutineScope {
-        log.d("onSendClick:$msg")
-        if (socket == null) {
+        log.d("onSendClick:client.connected?${client.connected}")
+        if (!client.connected) {
             withContext(Dispatchers.IO) {
-                socket = env.connectToDevice(selectedDevice, Conf.uuid)
+                client.connectTo(selectedDevice!!)
             }
-            view.updateStatus("Connected to ${selectedDevice}-$socket")
-            launch {
-                val receiveChannel = withContext(Dispatchers.Default) {
-                    startSendChannel()
-                }
-                for (srvMsg in receiveChannel) {
-                    view.displayMsg("Client:$srvMsg")
-                }
-            }
+            view.updateStatus("Connected to $selectedDevice")
+            client.sendMsgFrom(msgChan)
+            return@coroutineScope
         }
         msgChan.send(msg)
-    }
-
-    private suspend fun startSendChannel(): ReceiveChannel<String> {
-        val socket = requireNotNull(socket) {"onSendClick"}
-        val chan = Channel<String>()
-        socket.outputStream.bufferedWriter().use {
-            for (msg in msgChan) {
-                withContext(Dispatchers.Default) {
-                    log.d("startSendChannel:$msg")
-                    it.write("$msg\n")
-                    //it.write(msg)
-                    //it.newLine()
-                }
-                chan.send(msg)
-            }
-        }
-        return chan
     }
 
     fun onDeviceSelected(device: Environment.BluetoothDevice) {
@@ -118,7 +96,7 @@ class Presenter(
 
     fun onDestroy() {
         server.end()
-        socket?.close()
+        client.end()
     }
 
     private val server: Server = Server(logFactory, env)
@@ -138,18 +116,23 @@ class Presenter(
             serverSocket = env.listenBluetoothConnection(Conf.serviceName, Conf.uuid)
             log.d("listening...")
             socket = serverSocket!!.accept()
+            log.d("accepted ($socket)...")
         }
 
-        fun receiveFromClient(scope: CoroutineScope): Channel<String> {
+        fun receiveFromClient(scope: CoroutineScope): ReceiveChannel<String> {
             val channel = Channel<String>()
+            serverSocket!!.close()
             scope.launch {
-                val s2cSocket = this@Server.socket!!
+                val s2cSocket = requireNotNull(this@Server.socket)
+                //s2cSocket.outputStream.write(byteArrayOf(3))
                 s2cSocket.inputStream.bufferedReader().use {
+                //s2cSocket.inputStream.use {
                     while (s2cSocket.isConnected) {
+                        log.d("reading...")
                         @Suppress("BlockingMethodInNonBlockingContext")
                         val line = it.readLine()
-                        this@Server.log.d("received msg:$line")
-                        channel.send(line)
+                        log.d("received msg:$line")
+                        channel.send(line.toString())
                     }
                 }
             }
@@ -161,8 +144,52 @@ class Presenter(
         }
     }
 
+    private val client: Client = Client(logFactory, env)
+
+    class Client(
+        logFactory: LogFactory,
+        private val env: Environment
+    ) {
+        private val log = logFactory.newLog("Client")
+        private var socket: Environment.BlueSocket? = null
+
+        val connected: Boolean
+            get() = socket != null
+
+        fun connectTo(dev: Environment.BluetoothDevice) {
+            socket = env.connectToDevice(dev, Conf.uuid)
+            log.d("Connected-$socket")
+        }
+
+        private var sendMsgJob: Job? = null
+
+        fun sendMsgFrom(chan: ReceiveChannel<String>) {
+            val socket = requireNotNull(socket)
+            require(sendMsgJob == null) { "A channel already created" }
+            sendMsgJob = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher()).launch {
+                socket.outputStream.bufferedWriter().use {
+                    for (msg in chan) {
+                        log.d("sendMsgFrom:$msg")
+                        //it.write("$msg\n")
+                        it.write(msg)
+                        it.newLine()
+                        //chan.send(msg)
+                    }
+                }
+            }
+            //return chan
+        }
+
+        fun end() {
+            sendMsgJob?.cancel()
+            sendMsgJob = null
+            socket?.close()
+            socket = null
+        }
+
+    }
+
     private val msgChan: Channel<String> = Channel()
-    private var socket: Environment.BlueSocket? = null
     private var selectedDevice: Environment.BluetoothDevice? = null
     private val log = logFactory.newLog("Presenter")
 }

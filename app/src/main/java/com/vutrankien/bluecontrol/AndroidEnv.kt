@@ -59,9 +59,10 @@ class AndroidEnv(private val application: Application) : Environment {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override fun connectToDevice(
-        device: Environment.BluetoothDevice?,
+        device: Environment.BluetoothDevice,
         uuid: UUID
     ): Environment.BlueSocket {
+        //bluetoothAdapter.cancelDiscovery()
         val socket = toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid)
         socket.connect()
         return AndroidBlueSocket(socket)

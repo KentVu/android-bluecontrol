@@ -1,6 +1,5 @@
 package com.vutrankien.bluecontrol.lib
 
-import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -22,7 +21,7 @@ interface Environment {
     }
 
     fun connectToDevice(
-        device: BluetoothDevice?,
+        device: BluetoothDevice,
         uuid: UUID
     ): BlueSocket
 
