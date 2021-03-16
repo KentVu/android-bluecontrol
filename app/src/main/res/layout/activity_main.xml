@@ -65,7 +65,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_discover" />
 
-    <EditText
+    <TextView
         android:id="@+id/edt_log"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -73,6 +73,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
+        android:gravity="bottom"
         android:inputType="none"
         android:lines="3"
         android:text="log...\n"

@@ -39,7 +39,6 @@ class AndroidEnv(private val application: Application) : Environment {
         }.toSet()
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     override fun listenBluetoothConnection(name: String, uuid: UUID): Environment.BlueServerSocket {
         val blueServerSocket =
             bluetoothAdapter!!.listenUsingRfcommWithServiceRecord(name, uuid)
@@ -57,7 +56,6 @@ class AndroidEnv(private val application: Application) : Environment {
 
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     override fun connectToDevice(
         device: Environment.BluetoothDevice,
         uuid: UUID

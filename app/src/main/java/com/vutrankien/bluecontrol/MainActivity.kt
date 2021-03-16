@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
+import android.text.method.ScrollingMovementMethod
 import android.view.View
 import android.widget.*
 import androidx.activity.result.ActivityResult
@@ -31,6 +32,9 @@ class MainActivity : AppCompatActivity() {
     private val presenter by lazy { Presenter(AndroidLogFactory.instance, AndroidEnv(application), viewImpl) }
 
     private val viewImpl = ViewImpl()
+    private val tvLog by lazy { findViewById<TextView>(R.id.edt_log) }
+    private val edtMsg by lazy { findViewById<EditText>(R.id.edt_msg) }
+
     inner class ViewImpl : com.vutrankien.bluecontrol.lib.View {
         val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -97,12 +101,13 @@ class MainActivity : AppCompatActivity() {
 
         override fun updateStatus(sts: String) {
             log.d("updateStatus:$sts")
-            findViewById<EditText>(R.id.edt_log).append("log:$sts\n")
+            tvLog.append("log:$sts\n")
         }
 
         override fun displayMsg(rcvMsg: String) {
             log.d("displayMsg:$rcvMsg")
-            findViewById<EditText>(R.id.edt_log).append("$rcvMsg\n")
+            tvLog.append("$rcvMsg\n")
+            edtMsg.text = " ".toEditable()
         }
 
         override fun disableStartBtn() {
@@ -115,7 +120,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        //findViewById<EditText>(R.id.edt_log).movementMethod = ScrollingMovementMethod()
+        tvLog.movementMethod = ScrollingMovementMethod()
         lifecycleScope.launch {
             presenter.onCreate()
         }
@@ -138,15 +143,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onStartClick(view: View) {
         lifecycleScope.launch {
             presenter.onStartClick()
         }
     }
 
+    @Suppress("UNUSED_PARAMETER") // requires for android:onClick
     fun onSendClick(view: View) {
         lifecycleScope.launch {
-            presenter.onSendClick(findViewById<EditText>(R.id.edt_msg).text.toString())
+            presenter.onSendClick(edtMsg.text.toString())
         }
     }
 

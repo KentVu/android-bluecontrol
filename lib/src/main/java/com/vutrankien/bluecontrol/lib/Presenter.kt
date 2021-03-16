@@ -29,6 +29,7 @@ class Presenter(
             }
             // bluetooth enabled
             populatePairedDevices()
+            onStartClick()
         }
     }
 
@@ -74,7 +75,7 @@ class Presenter(
             }
             view.updateStatus("Connected to $selectedDevice")
             client.sendMsgFrom(msgChan)
-            return@coroutineScope
+            //return@coroutineScope
         }
         view.displayMsg("Client:$msg")
         msgChan.send(msg)
@@ -94,7 +95,7 @@ class Presenter(
         view.updateStatus("Server socket accepted!")
         launch {
             for (msg in server.receiveFromClient(CoroutineScope(Dispatchers.Default))) {
-                view.updateStatus("Client:${msg}")
+                view.displayMsg("Client:${msg}")
             }
         }
     }
@@ -129,9 +130,7 @@ class Presenter(
             serverSocket!!.close()
             scope.launch {
                 val s2cSocket = requireNotNull(this@Server.socket)
-                //s2cSocket.outputStream.write(byteArrayOf(3))
                 s2cSocket.inputStream.bufferedReader().use {
-                //s2cSocket.inputStream.use {
                     while (s2cSocket.isConnected) {
                         log.d("reading...")
                         @Suppress("BlockingMethodInNonBlockingContext")
@@ -168,6 +167,7 @@ class Presenter(
 
         private var sendMsgJob: Job? = null
 
+        @Suppress("BlockingMethodInNonBlockingContext")
         fun sendMsgFrom(chan: ReceiveChannel<String>) {
             val socket = requireNotNull(socket)
             require(sendMsgJob == null) { "A channel already created" }
