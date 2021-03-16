@@ -75,7 +75,7 @@
         android:layout_marginRight="8dp"
         android:gravity="bottom"
         android:inputType="none"
-        android:lines="3"
+        android:lines="5"
         android:text="log...\n"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

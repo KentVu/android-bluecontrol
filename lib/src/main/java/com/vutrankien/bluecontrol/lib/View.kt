@@ -1,7 +1,5 @@
 package com.vutrankien.bluecontrol.lib
 
-import kotlinx.coroutines.CoroutineScope
-
 interface View {
 
     suspend fun alert(msg: String, onDismiss: () -> Unit)
@@ -11,6 +9,11 @@ interface View {
     fun populateDevices(devices: Set<Environment.BluetoothDevice>)
     fun updateStatus(sts: String)
     fun displayMsg(rcvMsg: String)
-    fun disableStartBtn()
+    val startBtn: Element
+
+    interface Element {
+        fun disable()
+        fun enable()
+    }
 
 }

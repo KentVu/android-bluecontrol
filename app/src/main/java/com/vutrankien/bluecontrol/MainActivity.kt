@@ -110,8 +110,19 @@ class MainActivity : AppCompatActivity() {
             edtMsg.text = " ".toEditable()
         }
 
-        override fun disableStartBtn() {
-            findViewById<Button>(R.id.btn_start).isEnabled = false
+        override val startBtn: com.vutrankien.bluecontrol.lib.View.Element
+            get() {
+                return AndroidElement(findViewById<Button>(R.id.btn_start))
+            }
+
+        inner class AndroidElement(private val view: View) : com.vutrankien.bluecontrol.lib.View.Element {
+            override fun disable() {
+                view.isEnabled = false
+            }
+
+            override fun enable() {
+                view.isEnabled = true
+            }
         }
 
     }
