@@ -25,6 +25,8 @@ interface Environment {
         uuid: UUID
     ): BlueSocket
 
+    fun queryApps(): List<String>
+
     interface BlueSocket {
 
         val inputStream: InputStream

@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
@@ -64,6 +65,13 @@ class AndroidEnv(private val application: Application) : Environment {
         val socket = toRealDevices[device]!!.createRfcommSocketToServiceRecord(uuid)
         socket.connect()
         return AndroidBlueSocket(socket)
+    }
+
+    override fun queryApps(): List<String> = application.packageManager.let { pm ->
+        pm.queryIntentActivities(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
+            0
+        ).map { it.loadLabel(pm).toString() }
     }
 
     class AndroidBlueSocket(private val socket: BluetoothSocket) :

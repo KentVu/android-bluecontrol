@@ -36,13 +36,18 @@ class Server(
         readClientJob = scope.launch {
             val s2cSocket = requireNotNull(this@Server.socket)
             try {
-                s2cSocket.inputStream.bufferedReader().use {
+                s2cSocket.inputStream.bufferedReader().use { reader ->
                     while (s2cSocket.isConnected) {
                         log.d("reading...")
                         @Suppress("BlockingMethodInNonBlockingContext")
-                        val line = it.readLine()
+                        val line = reader.readLine()
                         log.d("received msg:$line")
                         channel.send(line.toString())
+                        s2cSocket.outputStream.bufferedWriter().use { writer ->
+                            env.queryApps().forEach {
+                                writer.write("$it\n")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
