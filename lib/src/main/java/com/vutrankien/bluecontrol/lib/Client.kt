@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -14,7 +15,10 @@ class Client(
     private val env: Environment
 ) {
     private val log = logFactory.newLog("Client")
+
     private var socket: Environment.BlueSocket? = null
+    private val _serverResponses: Channel<String> = Channel()
+    val serverResponses: ReceiveChannel<String> = _serverResponses
 
     val connected: Boolean
         get() = socket != null
@@ -27,6 +31,7 @@ class Client(
     }
 
     private var sendMsgJob: Job? = null
+    private var readServerJob: Job? = null
     private lateinit var chan: Channel<String>
     val msgChan: SendChannel<String>
         get() = chan
@@ -54,12 +59,24 @@ class Client(
                 end()
             }
         }
+        readServerJob = CoroutineScope(
+            Executors.newSingleThreadExecutor()
+                .asCoroutineDispatcher()
+        ).launch {
+            socket.inputStream.bufferedReader().use {
+                while (!sendMsgJob!!.isCancelled) {
+                    _serverResponses.send(it.readLine())
+                }
+            }
+        }
         //return chan
     }
 
     private fun end() {
         sendMsgJob?.cancel()
         sendMsgJob = null
+        readServerJob?.cancel()
+        readServerJob = null
         socket?.close()
         socket = null
     }

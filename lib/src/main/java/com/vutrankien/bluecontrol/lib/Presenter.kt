@@ -61,6 +61,11 @@ class Presenter(
             }
             view.updateStatus("Connected to $selectedDevice")
             client.startListenChannel()
+            launch {
+                for (serverResponse in client.serverResponses) {
+                    view.displayMsg("Server:$serverResponse")
+                }
+            }
             //return@coroutineScope
         }
         view.displayMsg("Client:$msg")
