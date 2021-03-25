@@ -27,6 +27,8 @@ interface Environment {
 
     fun queryApps(): List<String>
 
+    val batteryStatus: String
+
     interface BlueSocket {
 
         val inputStream: InputStream

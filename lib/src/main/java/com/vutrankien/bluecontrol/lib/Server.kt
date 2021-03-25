@@ -52,6 +52,10 @@ class Server(
                                     writer.flush()
                                 }
                             }
+                            if(line.startsWith("b")) {
+                                writer.write("${env.batteryStatus}\n")
+                                writer.flush()
+                            }
                         }
                     }
                 }

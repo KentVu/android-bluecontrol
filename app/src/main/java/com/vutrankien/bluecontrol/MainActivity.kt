@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
                     android.R.layout.simple_spinner_item,
                     devList.map { it.name }
                 )
-                onItemSelectedListener = object :AdapterView.OnItemSelectedListener {
+                onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                     override fun onNothingSelected(p0: AdapterView<*>?) {
                         log.w("onNothingSelected")
                     }
@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            }
+        }
 
         override fun updateStatus(sts: String) {
             log.d("updateStatus:$sts")

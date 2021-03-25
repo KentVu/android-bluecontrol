@@ -7,7 +7,9 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.BatteryManager
 import androidx.core.content.ContextCompat
 import com.vutrankien.android.lib.AndroidLogFactory
 import com.vutrankien.bluecontrol.lib.Environment
@@ -73,6 +75,18 @@ class AndroidEnv(private val application: Application) : Environment {
             0
         ).map { it.loadLabel(pm).toString() }
     }
+
+    override val batteryStatus: String
+        get() {
+            val batteryStatus: Intent =
+                IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                    application.registerReceiver(null, ifilter)
+                } ?: return "battery error!"
+            val level: Int = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale: Int = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            val batteryPct: Float = level * 100 / scale.toFloat()
+            return "$batteryPct($level/$scale)"
+        }
 
     class AndroidBlueSocket(private val socket: BluetoothSocket) :
         Environment.BlueSocket {
