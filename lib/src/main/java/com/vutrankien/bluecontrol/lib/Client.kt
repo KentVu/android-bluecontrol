@@ -10,20 +10,29 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
-class Client(
+interface Client {
+    val connected: Boolean
+    val serverResponses: ReceiveChannel<String>
+    val msgChan: SendChannel<String>
+    fun connectTo(dev: Environment.BluetoothDevice)
+    fun startListenChannel()
+    fun closeSendChannel()
+}
+
+class DefaultClient(
     logFactory: LogFactory,
     private val env: Environment
-) {
+):Client {
     private val log = logFactory.newLog("Client")
 
     private var socket: Environment.BlueSocket? = null
     private val _serverResponses: Channel<String> = Channel()
-    val serverResponses: ReceiveChannel<String> = _serverResponses
+    override val serverResponses: ReceiveChannel<String> = _serverResponses
 
-    val connected: Boolean
+    override val connected: Boolean
         get() = socket != null
 
-    fun connectTo(dev: Environment.BluetoothDevice) {
+    override fun connectTo(dev: Environment.BluetoothDevice) {
         socket = env.connectToDevice(dev,
             Conf.uuid
         )
@@ -33,13 +42,13 @@ class Client(
     private var sendMsgJob: Job? = null
     private var readServerJob: Job? = null
     private lateinit var chan: Channel<String>
-    val msgChan: SendChannel<String>
+    override val msgChan: SendChannel<String>
         get() = chan
 
     private val sendChannelOpen = sendMsgJob != null
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    fun startListenChannel() {
+    override fun startListenChannel() {
         val socket = requireNotNull(socket)
         require(!sendChannelOpen) { "A channel already created" }
         chan = Channel()
@@ -81,7 +90,7 @@ class Client(
         socket = null
     }
 
-    fun closeSendChannel() {
+    override fun closeSendChannel() {
         if (sendChannelOpen) {
             chan.close()
         }

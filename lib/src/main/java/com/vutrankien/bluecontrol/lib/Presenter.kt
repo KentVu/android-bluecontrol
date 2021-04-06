@@ -103,10 +103,9 @@ class Presenter(
         client.closeSendChannel()
     }
 
-    private val server: Server = Server(logFactory, env)
+    private val server: Server = DefaultServer(logFactory, env)
 
-    private val client: Client =
-        Client(logFactory, env)
+    private val client: Client = DefaultClient(logFactory, env)
 
     private var selectedDevice: Environment.BluetoothDevice? = null
     private val log = logFactory.newLog("Presenter")

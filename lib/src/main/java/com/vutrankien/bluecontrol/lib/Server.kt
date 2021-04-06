@@ -7,10 +7,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.launch
 
-class Server(
+interface Server {
+    fun startListening()
+    fun receiveFromClient(scope: CoroutineScope): ReceiveChannel<String>
+    fun end()
+}
+
+class DefaultServer(
     logFactory: LogFactory,
     private val env: Environment
-) {
+):Server {
     private val log = logFactory.newLog("Server")
     private var serverSocket: Environment.BlueServerSocket? = null
     private var socket: Environment.BlueSocket? = null
@@ -19,7 +25,7 @@ class Server(
     /**
      * Start listening.
      */
-    internal fun startListening() {
+    override fun startListening() {
         serverSocket = env.listenBluetoothConnection(
             Conf.serviceName,
             Conf.uuid
@@ -29,12 +35,12 @@ class Server(
         log.d("accepted ($socket)...")
     }
 
-    fun receiveFromClient(scope: CoroutineScope): ReceiveChannel<String> {
+    override fun receiveFromClient(scope: CoroutineScope): ReceiveChannel<String> {
         val channel = Channel<String>()
         serverSocket!!.close()
         require(readClientJob == null) {"Server already reading!"}
         readClientJob = scope.launch {
-            val s2cSocket = requireNotNull(this@Server.socket)
+            val s2cSocket = requireNotNull(this@DefaultServer.socket)
             try {
                 s2cSocket.outputStream.bufferedWriter().use { writer ->
                     s2cSocket.inputStream.bufferedReader().use { reader ->
@@ -68,7 +74,7 @@ class Server(
         return channel
     }
 
-    fun end() {
+    override fun end() {
         readClientJob?.cancel()
         readClientJob = null
         serverSocket?.close()
